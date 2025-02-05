@@ -1,57 +1,17 @@
-# Programación Assembly x86 - Convención C
-Arquitectura y Organización del Computador
+# TP1-b: Programación Assembly x86 - Convención C
 
-**Entrega:** 12/09/2024
+El presente repositorio corresponde a la **segunda parte** de un taller realizado durante la cursada de la materia "Arquitectura y Organización del Computador". A continuación se encuentran expuestas las correspondientes consignas.
 
-**Reentrega del TP1 completo (tp1-a, tp1-b y tp1-c):** 03/10/2024
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
--------------
 En este taller vamos a trabajar con código `C` y `ASM` para ejercitar el uso y adhesión a contratos estructurales y comportamentales. El punto 1 se trata de un repaso de los conceptos vistos en clase, necesarios para encarar la programación en forma efectiva. El resto de los puntos se resuelven programando determinadas rutinas en assembly.
-
-## Preparación: actualizando su fork del repositorio grupal
-Es importante que, para este tp1-b y el próximo tp1-c, **no creen un nuevo fork de este repositorio** si no que actualicen el repositorio grupal que estaban utilizando para el tp1-a.
-Estas son las instrucciones para sincronizar su fork grupal con el nuevo contenido de esta parte del TP1.
-Cuando subamos el tp1-c, o si actualizamos algún archivo del tp1-a o tp1-b, deberán seguir estas mismas instrucciones para sincronizar su repositorio con el de la cátedra.
-
-Para actualizar su fork con cambios del repositorio de la cátedra, que llamaremos "upstream", deben ejecutar los siguientes comandos desde la línea de comandos, estando ubicados dentro del clon local de su fork (de no recordar como clonar localmente su fork del repositorio grupal, revisitar las instrucciones del tp0):
-
-1. Agregar el repositorio de la cátedra como *upstream* remoto:
-   - Si usaron https:
-	```sh
-	git remote add upstream https://git.exactas.uba.ar/ayoc-doc/individual-<id_cuatrimestre>.git
-	```
-   - Si usaron ssh:
-	```sh
-	git remote add upstream git@git.exactas.uba.ar:ayoc-doc/individual-<id_cuatrimestre>.git
-	```
-2. Traer el último estado del upstream
-```sh
-git fetch upstream
-```
-3. Moverse al branch principal (`master`) si habían cambiado de branch, ya que los cambios se sincronizarán en dicho branch únicamente
-```sh
-git checkout master
-```
-4. Combinar los cambios locales con los del *upstream*
-```sh
-git merge upstream/master
-```
-
-Es posible que al ejecutar el merge les aparezca CONFLICT y diga que arreglen los conflictos para poder terminar el merge.
-En ese caso, deben:
-1. Resolver los conflictos, ya sea con la herramienta de resolución de conflictos de VScode o a mano (se recomienda utilizar VScode).
-2. Una vez resueltos los conflictos, tomar nota de cuales archivos tenían conflictos que fueron resueltos y ejecutar:
-```sh
-git add <archivos modificados>
-git commit -m "Merge con actualizaciones cátedra"
-git push origin
-```
 
 ## Ejercicio 0: Conceptos generales
 
 En este punto introductorio deberán responder algunas preguntas conceptuales relacionadas a lo que vimos en las clases teóricas y en la presentación de hoy. Las preguntas tienen que ver con _convención de llamada y bibliotecas compartidas_.
 
-- :pen_fountain: ¿Qué entienden por convencion de llamada? ¿Cómo está definida en la ABI de System V para 64 y 32 bits?
+- ¿Qué entienden por convencion de llamada? ¿Cómo está definida en la ABI de System V para 64 y 32 bits?
+
 Por convención de llamada entendemos que existe un contrato por el cual se indica la forma de enviar o recibir variables/información.
 
 En el caso de la ABI de System V para 64 bits
@@ -75,26 +35,26 @@ En el caso de la ABI de System V para 32 bits
 
 
 
-- :pen_fountain: ¿Quién toma la responsabilidad de asegurar que se cumple la convención de llamada en `C`? ¿Quién toma la responsabilidad de asegurar que se cumple la convención de llamada en `ASM`? 
+-  ¿Quién toma la responsabilidad de asegurar que se cumple la convención de llamada en `C`? ¿Quién toma la responsabilidad de asegurar que se cumple la convención de llamada en `ASM`? 
 
 El que se ocupa de cumplir la convencion de llamada en C es el compilador. En el caso de assembler es el usuario.
 
-- :pen_fountain: ¿Qué es un stack frame? ¿A qué se le suele decir **prólogo y epílogo**?
+-  ¿Qué es un stack frame? ¿A qué se le suele decir **prólogo y epílogo**?
 
 El stack frame son los datos almacenados en el stack por una llamada de funcion.
 El prologo y el epilogo son dos partes del codigo de una funcion.
 En el prologo se reserva espacio de la pila para datos temporales y se agrega padding en caso de que quede la pila desalineada.
 En el epilogo se restauran valores de registros no volatiles y devuelve la pila a su estado inicial. 
-- :pen_fountain: ¿Cuál es el mecanismo utilizado para almacenar **variables temporales**?
+-  ¿Cuál es el mecanismo utilizado para almacenar **variables temporales**?
 
 Si queres almacenar variables temporales podes utilizar los registros (en caso de no volatiles tendrias que restaurar los valores al salir de la funcion). y en caso de que no tener suficientes registros podes utilizar la pila. 
 
-- :pen_fountain: ¿A cuántos bytes es necesario alinear la pila si utilizamos funciones de `libc`? ¿Si la pila está alienada a 16 bytes al realizarse una llamada función, cuál va a ser su alineamiento al ejecutar la primera instrucción de la función llamada?
+-  ¿A cuántos bytes es necesario alinear la pila si utilizamos funciones de `libc`? ¿Si la pila está alienada a 16 bytes al realizarse una llamada función, cuál va a ser su alineamiento al ejecutar la primera instrucción de la función llamada?
 
 Para realizar llamadas de funciones de `libc` es necesario alinear la pila a 16 bytes.
 En caso de realizar una llamada de una funcion, la pila va a quedar desalineada temporalmente por 8 bytes ya que se hace un push a la pila de la direcion de rsp.
 
-- :pen_fountain: Una actualización de bibliotecas realiza los siguientes cambios a distintas funciones. ¿Cómo se ven impactados los programas ya compilados?
+-  Una actualización de bibliotecas realiza los siguientes cambios a distintas funciones. ¿Cómo se ven impactados los programas ya compilados?
 _Sugerencia:_ Describan la convención de llamada de cada una (en su versión antes y después del cambio).
 
 	- Una biblioteca de procesamiento cambia la estructura `pixel_t`:
@@ -144,7 +104,7 @@ _Sugerencia:_ Describan la convención de llamada de cada una (en su versión an
 
 	
 Una vez analizados los casos específicos describan la situación general:
-- :pen_fountain: ¿Qué sucede si una función externa utilizada por nuestro programa _(Es decir, que vive en una **biblioteca compartida**)_ cambia su interfaz (parámetros o tipo devuelto) luego de una actualización?
+-  ¿Qué sucede si una función externa utilizada por nuestro programa _(Es decir, que vive en una **biblioteca compartida**)_ cambia su interfaz (parámetros o tipo devuelto) luego de una actualización?
 
 Vas a tener que contemplar en nuevo tipo devuelto en caso de que ese sea el cambio.
 En caso de que exista un cambio del orden de parametros entonces vas a tener que pasarselo en el orden correcto (PREGUNTAR X LO DE ARRIBA)
@@ -251,8 +211,8 @@ De esa llamada averiguamos:
 Se pide:
 
 1. Correr el programa con `gdb` y poner un breakpoint en la función que imprime el mensaje de autenticación exitosa/fallida.
-2. :pen_fountain: Imprimir una porción adecuada del stack, con un formato adecuado para ver si podemos encontrar la clave.
-3. :pen_fountain: ¿En que función se encuentra la clave? Explicar el mecanismo de como se llega a encontrar la función en la que se calcula la clave.
+2. Imprimir una porción adecuada del stack, con un formato adecuado para ver si podemos encontrar la clave.
+3.  ¿En que función se encuentra la clave? Explicar el mecanismo de como se llega a encontrar la función en la que se calcula la clave.
 
 en gdb use el comando info functions para ver que funciones tenia, y a base de eso puse los breakpoints para entrar a la funcion y ver que hacia, como modificaba registros y stack. Luego llegue a la conclusion que la funcion do more stuff contenia la comparacion de strings y como recibia dos parametros uno era la clave que ingrese y la otra la correcta
 
